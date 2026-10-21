@@ -1,64 +1,200 @@
 # opencode-session-async
 
-> OpenCode 会话跨设备同步插件 —— 你的会话数据，永远不丢。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![OpenCode Plugin](https://img.shields.io/badge/OpenCode-Plugin-teal.svg)](https://opencode.ai)
+
+**[English](#english) | [中文](#中文)**
+
+---
+
+<a id="english"></a>
+
+# English
+
+Cross-device session sync and backup plugin for OpenCode.
+
+Switch computers, lose a disk, accidentally delete — your conversation history never disappears.
+
+## The Problem
+
+OpenCode stores all session data in a local SQLite file with no cloud sync:
+
+```
+~/.local/share/opencode/opencode.db   ← gone on a new machine
+```
+
+| What happens | Why | How this plugin fixes it |
+|---|---|---|
+| New computer, no history | Data is local-only | Open opencode, all sessions appear automatically |
+| Disk failure / OS reinstall, data lost | No backup | Full restore from your GitHub private repo |
+| Work computer vs home computer, no shared context | No multi-device sync | Near real-time bidirectional sync (default: 2 min interval) |
+| Accidentally deleted a session | Gone forever | Remote snapshots, restore anytime |
+
+## Quick Start
+
+### Install
+
+```bash
+opencode plugin add github:nbb-ai/opencode-session-async
+```
+
+### First Connection (30 seconds)
+
+1. Open opencode
+2. TUI shows a "Session Sync" dialog → click "Connect GitHub"
+3. Enter the verification code in your browser
+4. Done. The plugin creates a private repo and starts syncing.
+
+No `gh` CLI needed. No SSH keys. No manual repo creation.
+
+### New Computer
+
+```bash
+opencode plugin add github:nbb-ai/opencode-session-async
+opencode    # open → authorize → all history sessions appear
+```
+
+~740 sessions imported in about 40 seconds.
+
+## What Gets Synced
+
+| Synced | Not synced |
+|---|---|
+| All top-level sessions (messages, tool calls, code) | API keys / `opencode.json` |
+| Session title, timestamps, model info | Sub-agent sessions |
+| Session deletions (bidirectional) | Sessions over 32MB (configurable) |
+
+## Architecture
+
+![Architecture](architecture-en.png)
+
+- **Incremental**: one gzip file per session, only changed files transfer
+- **Conflict resolution**: last-writer-wins (highest `time.updated` wins)
+- **Safe replace**: backup → delete → import → verify, auto-rollback on failure
+- **Delete propagation**: deleting on machine A removes it on machine B
+
+## Privacy & Security
+
+- Data lives in **your own** GitHub account, no third-party servers
+- Repository is forced **private** (non-private repos refuse to sync)
+- All transfers via HTTPS encryption
+- GitHub token stored in macOS Keychain (zero plaintext on disk); Linux uses `token.txt` (600 permissions)
+- Authorization: GitHub OAuth device flow (one browser click)
+
+## Configuration
+
+`~/.config/opencode/session-sync.json`:
+
+```jsonc
+{
+  "enabled": true,
+  "repoName": "opencode-sessions",
+  "authMode": "device",              // device (browser only) | auto (prefer gh) | gh
+  "deviceFlowClientId": "Ov23xxx",  // your OAuth App client_id
+  "interval": 120,                   // sync interval (seconds)
+  "maxSessionMB": 32,                // max session size (MB)
+  "onConflict": "replace",           // replace | keep-local
+  "gcDays": 90                       // snapshot retention (days)
+}
+```
+
+## Commands
+
+| Command | Action |
+|---|---|
+| `/session-sync` | Show sync status |
+| `/session-sync now` | Sync immediately |
+| `/session-sync setup` | Re-run GitHub connection wizard |
+| `/session-sync gc 90` | Clean snapshots older than 90 days |
+| `/session-sync doctor` | Diagnostics |
+
+TUI palette (`Ctrl+P`) → "Session Sync" also available.
+
+## Requirements
+
+- OpenCode ≥ 2.0
+- macOS (Keychain) or Linux (file-based credentials)
+- GitHub account + one [OAuth App](https://github.com/settings/developers) (free, 2 minutes to create)
+
+## License
+
+MIT
+
+---
+
+<a id="中文"></a>
+
+# 中文
+
+OpenCode 会话跨设备同步 + 备份插件。
+
+换电脑、磁盘坏、误删 —— 你的会话记录永远不丢。
 
 ## 解决什么问题
 
-OpenCode 的所有会话数据只存在本机的 SQLite 数据库里（`~/.local/share/opencode/opencode.db`），这意味着：
+OpenCode 的会话数据只存在本机 SQLite 里，没有云端：
 
-- **换电脑，历史会话全没了** —— 新机器上打开 opencode，会话列表一片空白
-- **本地数据丢失无法恢复** —— 磁盘损坏、误删、系统重装，几年的对话记录瞬间消失
-- **多台电脑各有一份，互不知道** —— 公司电脑聊的，家里电脑看不到
+```
+~/.local/share/opencode/opencode.db   ← 换台电脑就看不到了
+```
 
-**本插件把会话自动同步到你自己的 GitHub 私有仓库**，换电脑、误删、多设备协作，历史会话随时恢复。
-
-## 效果
-
-| 场景 | 没有本插件 | 有本插件 |
+| 你遇到的 | 原因 | 本插件怎么解决 |
 |---|---|---|
-| 换新电脑 | 手动拷贝 12GB 数据库，路径还不一定对 | 打开 opencode，全部历史会话自动出现 |
-| 磁盘坏了 | 数据全丢 | 从 GitHub 私有仓库完整恢复 |
-| 两台电脑同时用 | 各聊各的，互不知道 | 近实时双向同步（~2 分钟内） |
-| 误删会话 | 找不回来 | 远端有快照，随时导回 |
+| 换了台电脑，之前的会话全没了 | 数据只在本地 | 打开 opencode，历史会话自动出现 |
+| 磁盘坏了 / 系统重装，对话记录丢了 | 没有备份 | 从 GitHub 私有仓库完整恢复 |
+| 公司电脑聊的，家里电脑看不到 | 多设备不同步 | 双向近实时同步（默认 2 分钟轮询） |
+| 误删了一个重要会话 | 删了就没了 | 远端有快照，随时导回 |
 
-## 安装
+## 快速开始
+
+### 安装
 
 ```bash
 opencode plugin add github:nbb-ai/opencode-session-async
 ```
 
-## 首次使用（全自动引导）
+### 首次连接（30 秒）
 
 1. 打开 opencode
-2. TUI 弹出「会话跨机同步」对话框 → 点「连接 GitHub」
-3. 浏览器完成授权（输入验证码，点确认）
-4. 插件自动在你的账号下创建私有仓库，开始全量同步
+2. TUI 弹出「会话跨机同步」→ 点「连接 GitHub」
+3. 浏览器输入验证码，点授权
+4. 完成。插件自动建私有仓库，开始同步
 
-**不需要**安装 gh CLI、不需要配置 SSH key、不需要手动建仓库。
+不需要装 gh，不需要配 SSH key，不需要手动建仓库。
 
-## 换新电脑
+### 换新电脑
 
 ```bash
-# 1. 安装插件（或从配置仓库继承）
 opencode plugin add github:nbb-ai/opencode-session-async
-
-# 2. 打开 opencode，弹出授权对话框，浏览器点一次
-
-# 3. 完成。742 个历史会话约 40 秒内全部出现。
+opencode    # 打开 → 授权 → 全部历史会话出现
 ```
 
-## 工作原理
+742 个会话约 40 秒导入完成。
 
-```
-本机会话 ──导出──> gzip 快照 ──git push──> GitHub 私有仓库
-                                                    │
-另一台机器 <──git pull── 解压导入 <──────────────────┘
-```
+## 同步了什么
 
-- **粒度**：一个会话一个压缩文件，只传变化的（增量）
-- **冲突**：同一会话两台机器都改过 → 保留时间最新的（最后写入者胜出）
-- **安全**：仓库强制私有，传输 HTTPS 加密，token 存 macOS 钥匙串（不落磁盘）
-- **可靠**：更新前先备份，失败自动回滚
+| 会同步 | 不会同步 |
+|---|---|
+| 全部顶层会话（含消息、工具调用、代码片段） | API key / `opencode.json` |
+| 会话标题、时间戳、模型信息 | 子会话（subagent 对话） |
+| 会话删除操作（双向传播） | 超过 32MB 的单个会话（可调） |
+
+## 架构
+
+![Architecture](architecture-zh.png)
+
+- **增量同步**：只传变化的会话文件，742 个历史会话不会重传
+- **冲突处理**：两台机器改了同一会话 → 保留最新的（`time.updated` 最大者）
+- **安全替换**：更新已有会话时先备份 → 删除 → 导入 → 校验，失败自动回滚
+- **删除传播**：在 A 上删的会话，B 上也会自动删
+
+## 隐私与安全
+
+- 数据存**你自己的** GitHub 账号，不经任何第三方服务器
+- 仓库强制**私有**（非私有仓库拒绝同步）
+- 传输全程 HTTPS 加密
+- GitHub token 存 macOS 钥匙串（磁盘零明文）；Linux 用 `token.txt`（600 权限）
+- 授权方式：GitHub OAuth 设备流（浏览器点一次）
 
 ## 配置
 
@@ -67,33 +203,33 @@ opencode plugin add github:nbb-ai/opencode-session-async
 ```jsonc
 {
   "enabled": true,
-  "repoName": "opencode-sessions",    // GitHub 仓库名
-  "authMode": "device",               // device = 纯浏览器授权（推荐）
-  "deviceFlowClientId": "Ov23xxx",   // 你的 OAuth App client_id
-  "interval": 120,                    // 同步间隔（秒）
-  "maxSessionMB": 32,                 // 单会话体积上限
-  "onConflict": "replace"             // 冲突时替换本地
+  "repoName": "opencode-sessions",
+  "authMode": "device",              // device(纯浏览器) | auto(优先gh) | gh
+  "deviceFlowClientId": "Ov23xxx",  // 你的 OAuth App client_id
+  "interval": 120,                   // 同步间隔（秒）
+  "maxSessionMB": 32,                // 单会话上限（MB）
+  "onConflict": "replace",           // replace | keep-local
+  "gcDays": 90                       // 快照保留天数
 }
 ```
 
 ## 命令
 
-```
-/session-sync          # 查看同步状态
-/session-sync now      # 立即同步一次
-/session-sync setup    # 重新引导连接 GitHub
-/session-sync gc 90    # 清理 90 天前的快照（释放仓库空间）
-/session-sync doctor   # 自检
-```
+| 命令 | 作用 |
+|---|---|
+| `/session-sync` | 查看同步状态 |
+| `/session-sync now` | 立即同步 |
+| `/session-sync setup` | 重新引导连接 GitHub |
+| `/session-sync gc 90` | 清理 90 天前的快照 |
+| `/session-sync doctor` | 自检 |
 
-TUI 调色板（`Ctrl+P`）也有「会话同步」入口。
+TUI 调色板（`Ctrl+P`）→「会话同步」也有入口。
 
-## 隐私
+## 环境要求
 
-- 会话数据只存**你自己的** GitHub 账号下，不经任何第三方
-- 仓库强制私有（非私有仓库会拒绝同步）
-- GitHub token 存 macOS 钥匙串 / Linux token.txt（600 权限），磁盘不留明文
-- `opencode.json`（API key）不会被同步
+- OpenCode ≥ 2.0
+- macOS（钥匙串存凭据）或 Linux（文件存凭据）
+- GitHub 账号 + 一个 [OAuth App](https://github.com/settings/developers)（免费的，2 分钟创建）
 
 ## License
 
