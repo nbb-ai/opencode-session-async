@@ -1,0 +1,18 @@
+{
+  "name": "opencode-session-async",
+  "version": "0.1.0",
+  "description": "OpenCode 会话跨机同步插件：自动将会话同步到 GitHub 私有仓库，多台电脑无缝切换",
+  "type": "module",
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./tui": "./tui.ts"
+  },
+  "files": ["index.ts", "tui.ts", "README.md"],
+  "keywords": ["opencode", "plugin", "sync", "sessions", "github", "backup"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nbb-ai/opencode-session-async.git"
+  }
+}

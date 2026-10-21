@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "repoName": "opencode-sessions",
+  "owner": "shangwfa",
+  "transport": "auto",
+  "interval": 120,
+  "debounce": 15,
+  "sanitize": false,
+  "maxSessionMB": 32,
+  "gcDays": 90,
+  "maxRepoMB": 800,
+  "defaultDirectory": null,
+  "onConflict": "replace",
+  "deviceFlowClientId": "Ov23liaqbVg1uEiIxNhc",
+  "remap": {},
+  "authMode": "device"
+}
