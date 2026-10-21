@@ -1097,7 +1097,23 @@ async function doctor(): Promise<string> {
 }
 
 /* ------------------------------------------------------------------ 配置 */
+/** 首次运行：把插件自带的 config.json 复制到用户配置目录 */
+function ensureConfigFile() {
+  if (fs.existsSync(CONFIG_FILE)) return
+  try {
+    // 插件自身目录下的 config.json（随包分发）
+    const pluginDir = path.dirname(new URL(import.meta.url).pathname)
+    const defaultCfg = path.join(pluginDir, "config.json")
+    if (fs.existsSync(defaultCfg)) {
+      fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true })
+      fs.copyFileSync(defaultCfg, CONFIG_FILE)
+      log("INFO", `已从插件复制默认配置到 ${CONFIG_FILE}`)
+    }
+  } catch {}
+}
+
 function readConfig(): any {
+  ensureConfigFile()
   return { ...DEFAULT_CONFIG, ...readJSON(CONFIG_FILE, {}) }
 }
 function writeConfig(cfg: any) {
