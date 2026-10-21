@@ -90,7 +90,7 @@ opencode    # open → authorize → all history sessions appear
   "enabled": true,
   "repoName": "opencode-sessions",
   "authMode": "device",              // device (browser only) | auto (prefer gh) | gh
-  "deviceFlowClientId": "Ov23xxx",  // your OAuth App client_id
+  "deviceFlowClientId": "Ov23...", // built-in default, override if needed
   "interval": 120,                   // sync interval (seconds)
   "maxSessionMB": 32,                // max session size (MB)
   "onConflict": "replace",           // replace | keep-local
@@ -114,7 +114,7 @@ TUI palette (`Ctrl+P`) → "Session Sync" also available.
 
 - OpenCode ≥ 2.0
 - macOS (Keychain) or Linux (file-based credentials)
-- GitHub account + one [OAuth App](https://github.com/settings/developers) (free, 2 minutes to create)
+- GitHub account (that's it — OAuth App is built in, zero config)
 
 ## License
 
@@ -205,7 +205,7 @@ opencode    # 打开 → 授权 → 全部历史会话出现
   "enabled": true,
   "repoName": "opencode-sessions",
   "authMode": "device",              // device(纯浏览器) | auto(优先gh) | gh
-  "deviceFlowClientId": "Ov23xxx",  // 你的 OAuth App client_id
+  "deviceFlowClientId": "Ov23...", // 已内置默认值，一般不用改
   "interval": 120,                   // 同步间隔（秒）
   "maxSessionMB": 32,                // 单会话上限（MB）
   "onConflict": "replace",           // replace | keep-local
@@ -229,7 +229,7 @@ TUI 调色板（`Ctrl+P`）→「会话同步」也有入口。
 
 - OpenCode ≥ 2.0
 - macOS（钥匙串存凭据）或 Linux（文件存凭据）
-- GitHub 账号 + 一个 [OAuth App](https://github.com/settings/developers)（免费的，2 分钟创建）
+- GitHub 账号（OAuth App 已内置，零配置）
 
 ## License
 

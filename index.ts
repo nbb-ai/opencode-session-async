@@ -61,7 +61,7 @@ const DEFAULT_CONFIG: any = {
   maxRepoMB: 800,
   defaultDirectory: null,
   onConflict: "replace",
-  deviceFlowClientId: null,
+  deviceFlowClientId: "Ov23liaqbVg1uEiIxNhc",
   remap: {},
 }
 
